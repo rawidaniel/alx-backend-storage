@@ -5,7 +5,7 @@ CREATE FUNCTION SafeDiv (firstnum INT,  secondnum INT)
 RETURNS FLOAT DETERMINISTIC
 BEGIN
     DECLARE output FLOAT DEFAULT 0;
-    IF (secondnum = 0) THEN
+    IF (secondnum <> 0) THEN
         SET output = firstnum / secondnum;
     END IF;
     RETURN output;
