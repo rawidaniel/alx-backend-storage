@@ -9,6 +9,30 @@ from functools import wraps
 UnionOfTypes = Union[bytes, float, str, int]
 
 
+def call_history(method: Callable) -> Callable:
+    """
+    Parameters
+    ---------
+    method : Callable
+        a function to be decorated by count_calls
+
+    Returns
+    ---------
+    Callable
+      add its input parameters to one list in redis,
+      and store its output into another list
+    """
+    @wraps(method)
+    def wrapper_function(self, *args, **kwargs):
+        inputs = f"{method.__qualname__}:inputs"
+        outputs = f"{method.__qualname__}:outputs"
+        output = method(self, *args, **kwargs)
+        self._redis.rpush(inputs, *args)
+        self._redis.rpush(outputs, output)
+        return output
+    return wrapper_function
+
+
 def count_calls(method: Callable) -> Callable:
     """
     Parameters
@@ -62,6 +86,7 @@ class Cache:
         self._redis = redis.Redis(host="localhost", port=6379, db=0)
         self._redis.flushdb()
 
+    @call_history
     @count_calls
     def store(self, data: UnionOfTypes) -> str:
         """
