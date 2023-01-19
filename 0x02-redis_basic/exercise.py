@@ -4,8 +4,32 @@ Module exercise
 """
 import redis
 import uuid
-from typing import Union, Callable, Optional, Any
+from typing import Union, Callable, Optional
+from functools import wraps
 UnionOfTypes = Union[bytes, float, str, int]
+
+
+def count_calls(method: Callable) -> Callable:
+    """
+    Parameters
+    ---------
+    method : Callable
+        a function to be decorated by count_calls
+    key : str
+        value of the key
+    Returns
+    ---------
+    Callable
+      set a callable method name as key in redis and increment
+      every time it called
+    """
+    key = method.__qualname__
+    @wraps(method)
+    def wrapper_function(self, *args, **kwargs):
+        """ This is wrapper function for count_calls method """
+        self._redis.incr(key)
+        return method(self, *args, *kwargs)
+    return wrapper_function
 
 
 class Cache:
@@ -38,6 +62,7 @@ class Cache:
         self._redis = redis.Redis(host="localhost", port=6379, db=0)
         self._redis.flushdb()
 
+    @count_calls
     def store(self, data: UnionOfTypes) -> str:
         """
         Parameters
