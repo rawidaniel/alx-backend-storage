@@ -9,6 +9,30 @@ from functools import wraps
 UnionOfTypes = Union[bytes, float, str, int]
 
 
+def replay(method: Callable):
+    """display the history of calls of a particular function."""
+    client = redis.Redis()
+    key = method.__qualname__
+    value = client.get(key)
+    try:
+        value = int(value.decode("utf-8"))
+    except Exception:
+        value = 0
+    print(f"{key} was called {value} times:")
+    inputs = client.lrange(f"{key}:inputs", 0, -1)
+    outputs = client.lrange(f"{key}:outputs", 0, -1)
+    for inp, outp in zip(inputs, outputs):
+        try:
+            inp = inp.decode("utf-8")
+        except Exception:
+            inp = ""
+        try:
+            outp = outp.decode("utf-8")
+        except Exception:
+            outp = ""
+        print(f"{key}(*{inp}) -> {outp}")
+
+
 def call_history(method: Callable) -> Callable:
     """
     Parameters
